@@ -8,9 +8,19 @@ class UserListBloc {
 
   Observable<List<User>> get users => _users.stream;
   
-  getUsers() async {
-    List<User> users = await _repository.getUsers();
+  getUsers({String query}) async {
+    List<User> users = await _repository.getUsers(query: query);
     _users.sink.add(users);
+  }
+
+  createUser(User user) async {
+    await _repository.createUser(user);
+    getUsers();
+  }
+
+  updateUser(User user) async {
+    await _repository.updateUser(user);
+    getUsers();
   }
 
   deleteUser(int id) async {

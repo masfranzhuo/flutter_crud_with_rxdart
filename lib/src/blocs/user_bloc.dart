@@ -4,28 +4,28 @@ import 'package:rxdart/rxdart.dart';
 
 class UserBloc {
   final _repository = Repository();
-  final _user = PublishSubject<User>();
+  final _userId = PublishSubject<int>();
+  final _user = BehaviorSubject<Future<User>>();
 
-  Observable<User> get user => _user.stream;
-  
-  getUser(int id) async {
-    User user = id == null ? User() : await _repository.getUser(id);
-    _user.sink.add(user);
+  Function(int) get getUserById => _userId.sink.add;
+  Observable<Future<User>> get user => _user.stream;
+
+  UserBloc() {
+    _userId.stream.transform(_userTransformer()).pipe(_user);
   }
 
-  createUser(User user) async {
-    user.id = await _repository.createUser(user);
-    _user.sink.add(user);
+  _userTransformer() {
+    return ScanStreamTransformer(
+      (Future<User> user, int id, int index) {
+        user = _repository.getUser(id);
+        return user;
+      }
+    );
   }
 
-  updateUser(User user) async {
-    await _repository.updateUser(user);
-    _user.sink.add(user);
-  }
-
-  dispose() {
+  dispose() async {
+    _userId.close();
+    await _user.drain();
     _user.close();
   }
 }
-
-final userBloc = UserBloc();
